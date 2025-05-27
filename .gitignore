@@ -137,6 +137,5 @@ Assets/AssetStoreTools*
 Packages/packages-lock.json
 
 iOSInstruction/*
-Assets/TextMesh Pro/*
-Assets/Settings/*.meta
+Assets/Settings/BuildProfiles.meta
 Assets/Resources.meta

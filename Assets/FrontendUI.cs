@@ -40,6 +40,8 @@ public class FrontendUI : MonoBehaviour
 
         manager.OnLocalizationProgressUpdated += UpdateChecklist;
 
+        manager.OnStepProgressUpdated += UpdateStepList;
+
         taskDropdown.onValueChanged.AddListener(OnTaskSelected);
         captureButton.onClick.AddListener( () =>
         {
@@ -49,7 +51,15 @@ public class FrontendUI : MonoBehaviour
                 manager.TrackStepAsync();
         });
 
-        startTaskButton.onClick.AddListener(() => manager.startTracking());
+        startTaskButton.onClick.AddListener(() =>
+        {
+            foreach (Transform child in checklistContainer)
+            {
+                Destroy(child.gameObject);
+            }
+            checklistItems.Clear();
+            manager.startTracking();
+        });
         backButton.onClick.AddListener(ResetToTaskSelection);
 
         UpdateUIForState(RecognX.TaskState.Idle);
@@ -96,6 +106,25 @@ public class FrontendUI : MonoBehaviour
         }
     }
 
+    private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
+    {
+        foreach (var (stepId, description, completed) in steps)
+        {
+            if (!checklistItems.TryGetValue(stepId, out GameObject item))
+            {
+                item = Instantiate(checklistItemPrefab, checklistContainer);
+                checklistItems[stepId] = item;
+            }
+
+            var text = item.GetComponentInChildren<TextMeshProUGUI>();
+            if (text != null)
+            {
+                text.text = description;
+                text.color = completed ? Color.green : Color.white;
+            }
+        }
+    }
+
     private void ResetToTaskSelection()
     {
         manager.ResetToTaskSelection();
@@ -105,7 +134,6 @@ public class FrontendUI : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-
         checklistItems.Clear();
     }
 }
