@@ -14,7 +14,8 @@ public class FrontendUI : MonoBehaviour
 
     public Transform checklistContainer;
     public GameObject checklistItemPrefab;
-    private readonly Dictionary<int, GameObject> checklistItems = new();
+    private readonly Dictionary<int, GameObject> objectChecklistItems = new();
+    private readonly Dictionary<int, GameObject> stepChecklistItems = new();
 
     private List<RecognX.TaskResponse> loadedTasks;
     private RecognX.ARInstructionManager manager;
@@ -33,7 +34,14 @@ public class FrontendUI : MonoBehaviour
         manager.OnInstructionFeedback += response =>
         {
             Debug.Log($"🧠 Feedback received: {response.response}");
-            feedbackText.text = response.response;
+            if (string.IsNullOrEmpty(response.response) && response.task_completed)
+            {
+                feedbackText.text = "✅ Task completed!";
+            }
+            else
+            {
+                feedbackText.text = response.response;
+            }
         };
 
         manager.OnTaskStateChanged += UpdateUIForState;
@@ -57,7 +65,8 @@ public class FrontendUI : MonoBehaviour
             {
                 Destroy(child.gameObject);
             }
-            checklistItems.Clear();
+            objectChecklistItems.Clear();
+            stepChecklistItems.Clear();
             manager.startTracking();
         });
         backButton.onClick.AddListener(ResetToTaskSelection);
@@ -75,7 +84,7 @@ public class FrontendUI : MonoBehaviour
     {
         bool isIdle = state == RecognX.TaskState.Idle;
         bool locating = state == RecognX.TaskState.LocatingObjects;
-        bool readyOrTracking = state == RecognX.TaskState.ReadyToTrack || state == RecognX.TaskState.Tracking;
+        bool readyOrTracking = state == RecognX.TaskState.ReadyToTrack || state == RecognX.TaskState.Tracking || state == TaskState.Completed;
 
         taskDropdown.gameObject.SetActive(isIdle);
         backButton.gameObject.SetActive(!isIdle);
@@ -91,10 +100,10 @@ public class FrontendUI : MonoBehaviour
             int yoloId = kvp.Key;
             var (label, required, found) = kvp.Value;
 
-            if (!checklistItems.TryGetValue(yoloId, out GameObject item))
+            if (!objectChecklistItems.TryGetValue(yoloId, out GameObject item))
             {
                 item = Instantiate(checklistItemPrefab, checklistContainer);
-                checklistItems[yoloId] = item;
+                objectChecklistItems[yoloId] = item;
             }
 
             var text = item.GetComponentInChildren<TextMeshProUGUI>();
@@ -108,18 +117,22 @@ public class FrontendUI : MonoBehaviour
 
     private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
     {
+        // Clear existing step items to avoid overlap and ensure freshness
+        foreach (var item in stepChecklistItems.Values)
+        {
+            Destroy(item);
+        }
+        stepChecklistItems.Clear();
+
         foreach (var (stepId, description, completed) in steps)
         {
-            if (!checklistItems.TryGetValue(stepId, out GameObject item))
-            {
-                item = Instantiate(checklistItemPrefab, checklistContainer);
-                checklistItems[stepId] = item;
-            }
+            GameObject item = Instantiate(checklistItemPrefab, checklistContainer);
+            stepChecklistItems[stepId] = item;
 
             var text = item.GetComponentInChildren<TextMeshProUGUI>();
             if (text != null)
             {
-                text.text = description;
+                text.text = $"{stepId + 1}: {description}";
                 text.color = completed ? Color.green : Color.white;
             }
         }
@@ -129,11 +142,12 @@ public class FrontendUI : MonoBehaviour
     {
         manager.ResetToTaskSelection();
         feedbackText.text = "";
-        
+
         foreach (Transform child in checklistContainer)
         {
             Destroy(child.gameObject);
         }
-        checklistItems.Clear();
+        objectChecklistItems.Clear();
+        stepChecklistItems.Clear();
     }
 }
