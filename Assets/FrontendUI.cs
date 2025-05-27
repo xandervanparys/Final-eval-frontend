@@ -38,7 +38,7 @@ public class FrontendUI : MonoBehaviour
 
         manager.OnTaskStateChanged += UpdateUIForState;
 
-        manager.OnLocalizationProgressUpdated += UpdateChecklist;
+        manager.OnLocalizationProgressUpdated += UpdateObjects;
 
         manager.OnStepProgressUpdated += UpdateStepList;
 
@@ -84,7 +84,7 @@ public class FrontendUI : MonoBehaviour
         feedbackText.gameObject.SetActive(readyOrTracking);
     }
 
-    private void UpdateChecklist(Dictionary<int, (string label, int required, int found)> summary)
+    private void UpdateObjects(Dictionary<int, (string label, int required, int found)> summary)
     {
         foreach (var kvp in summary)
         {
