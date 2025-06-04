@@ -117,7 +117,6 @@ public class FrontendUI : MonoBehaviour
 
     private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
     {
-        // Clear existing step items to avoid overlap and ensure freshness
         foreach (var item in stepChecklistItems.Values)
         {
             Destroy(item);
