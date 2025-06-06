@@ -48,6 +48,7 @@ public class FrontendUI : MonoBehaviour
         manager.OnTaskStateChanged += UpdateUIForState;
 
         manager.OnLocalizationProgressUpdated += UpdateObjects;
+        manager.OnRelevantObjectsUpdated += UpdateObjects;
 
         manager.OnStepProgressUpdated += UpdateStepList;
 
@@ -56,27 +57,14 @@ public class FrontendUI : MonoBehaviour
 
         startTaskButton.onClick.AddListener(() =>
         {
-            foreach (Transform child in objectChecklistContainer)
-            {
-                Destroy(child.gameObject);
-            }
+            clearObjects();
+            clearSteps();
 
-            foreach (Transform child in stepChecklistContainer)
-            {
-                Destroy(child.gameObject);
-            }
-
-            objectChecklistItems.Clear();
-            stepChecklistItems.Clear();
             manager.startTracking();
         });
         backButton.onClick.AddListener(ResetToTaskSelection);
 
-        locateButton.onClick.AddListener(() =>
-        {
-            var activeIds = manager.GetCurrentYoloIdsForCurrentStep();
-            manager.LocateObjectsForCurrentStep(activeIds);
-        });
+        locateButton.onClick.AddListener(() => { manager.CaptureAndLocalize(); });
 
         UpdateUIForState(RecognX.TaskState.Idle);
     }
@@ -110,6 +98,7 @@ public class FrontendUI : MonoBehaviour
     private void UpdateObjects(Dictionary<int, (string label, int required, int found)> summary)
     {
         Debug.Log("UpdateObjects called");
+        clearObjects();
         foreach (var kvp in summary)
         {
             int yoloId = kvp.Key;
@@ -132,13 +121,7 @@ public class FrontendUI : MonoBehaviour
 
     private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
     {
-        foreach (var item in stepChecklistItems.Values)
-        {
-            Destroy(item);
-        }
-
-        stepChecklistItems.Clear();
-
+        clearSteps();
         foreach (var (stepId, description, completed) in steps)
         {
             GameObject item = Instantiate(checklistItemPrefab, stepChecklistContainer);
@@ -153,22 +136,30 @@ public class FrontendUI : MonoBehaviour
         }
     }
 
+    private void clearObjects()
+    {
+        objectChecklistItems.Clear();
+        foreach (Transform child in objectChecklistContainer)
+        {
+            Destroy(child.gameObject);
+        }
+    }
+
+    private void clearSteps()
+    {
+        stepChecklistItems.Clear();
+        foreach (Transform child in stepChecklistContainer)
+        {
+            Destroy(child.gameObject);
+        }
+    }
+
     private void ResetToTaskSelection()
     {
         manager.ResetToTaskSelection();
         feedbackText.text = "";
 
-        foreach (Transform child in stepChecklistContainer)
-        {
-            Destroy(child.gameObject);
-        }
-
-        foreach (Transform child in objectChecklistContainer)
-        {
-            Destroy(child.gameObject);
-        }
-
-        objectChecklistItems.Clear();
-        stepChecklistItems.Clear();
+        clearSteps();
+        clearObjects();
     }
 }
