@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using RecognX;
 using TMPro;
@@ -15,6 +16,7 @@ public class FrontendUI : MonoBehaviour
     public Transform objectChecklistContainer;
     public Transform stepChecklistContainer;
     public GameObject checklistItemPrefab;
+    public GameObject loadingSpinner;
     private readonly Dictionary<int, GameObject> objectChecklistItems = new();
     private readonly Dictionary<int, GameObject> stepChecklistItems = new();
 
@@ -23,6 +25,8 @@ public class FrontendUI : MonoBehaviour
 
     private void Start()
     {
+        loadingSpinner.SetActive(true);
+
         manager = RecognX.ARInstructionManager.Instance;
 
         manager.OnTasksLoaded += tasks =>
@@ -30,6 +34,7 @@ public class FrontendUI : MonoBehaviour
             loadedTasks = tasks;
             taskDropdown.ClearOptions();
             taskDropdown.AddOptions(tasks.ConvertAll(t => new TMP_Dropdown.OptionData(t.title)));
+            loadingSpinner.SetActive(false);
         };
 
         manager.OnInstructionFeedback += response =>
@@ -53,26 +58,50 @@ public class FrontendUI : MonoBehaviour
         manager.OnStepProgressUpdated += UpdateStepList;
 
         taskDropdown.onValueChanged.AddListener(OnTaskSelected);
-        captureButton.onClick.AddListener(() => { manager.TrackStepAsync(); });
+        captureButton.onClick.AddListener(() =>
+        {
+            loadingSpinner.SetActive(true);
+            manager.TrackStepAsync().ContinueWith(task =>
+            {
+                if (task.IsFaulted && task.Exception != null)
+                    Debug.LogException(task.Exception);
+                loadingSpinner.SetActive(false);
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+        });
 
         startTaskButton.onClick.AddListener(() =>
         {
             clearObjects();
             clearSteps();
 
-            manager.startTracking();
+            manager.StartTracking();
         });
         backButton.onClick.AddListener(ResetToTaskSelection);
 
-        locateButton.onClick.AddListener(() => { manager.CaptureAndLocalize(); });
+        locateButton.onClick.AddListener(() =>
+        {
+            loadingSpinner.SetActive(true);
+            manager.CaptureAndLocalize().ContinueWith(task =>
+            {
+                if (task.IsFaulted && task.Exception != null)
+                    Debug.LogException(task.Exception);
+                loadingSpinner.SetActive(false);
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+        });
 
         UpdateUIForState(RecognX.TaskState.Idle);
     }
 
     private void OnTaskSelected(int index)
     {
+        loadingSpinner.SetActive(true);
         var taskId = loadedTasks[index].id;
-        manager.SelectTaskAsync(taskId);
+        manager.SelectTaskAsync(taskId).ContinueWith(task =>
+        {
+            if (task.IsFaulted && task.Exception != null)
+                Debug.LogException(task.Exception);
+            loadingSpinner.SetActive(false);
+        }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
     private void UpdateUIForState(RecognX.TaskState state)
