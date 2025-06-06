@@ -13,10 +13,9 @@ public class FrontendUI : MonoBehaviour
     public Button backButton;
     public TextMeshProUGUI feedbackText;
     public Button locateButton;
-    public Transform objectChecklistContainer;
-    public Transform stepChecklistContainer;
-    public GameObject checklistItemPrefab;
     public GameObject loadingSpinner;
+    public TextMeshProUGUI stepList;
+    public TextMeshProUGUI objectList;
     private readonly Dictionary<int, GameObject> objectChecklistItems = new();
     private readonly Dictionary<int, GameObject> stepChecklistItems = new();
 
@@ -124,62 +123,94 @@ public class FrontendUI : MonoBehaviour
         }
     }
 
+    // private void UpdateObjects(Dictionary<int, (string label, int required, int found)> summary)
+    // {
+    //     Debug.Log("UpdateObjects called");
+    //     clearObjects();
+    //     foreach (var kvp in summary)
+    //     {
+    //         int yoloId = kvp.Key;
+    //         var (label, required, found) = kvp.Value;
+    //
+    //         if (!objectChecklistItems.TryGetValue(yoloId, out GameObject item))
+    //         {
+    //             item = Instantiate(checklistItemPrefab, objectChecklistContainer);
+    //             objectChecklistItems[yoloId] = item;
+    //         }
+    //
+    //         var text = item.GetComponentInChildren<TextMeshProUGUI>();
+    //         if (text != null)
+    //         {
+    //             text.text = $"{label}: {found}/{required}";
+    //             text.color = found >= required ? Color.green : Color.white;
+    //         }
+    //     }
+    // }
+
+    // private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
+    // {
+    //     clearSteps();
+    //     foreach (var (stepId, description, completed) in steps)
+    //     {
+    //         GameObject item = Instantiate(checklistItemPrefab, stepChecklistContainer);
+    //         stepChecklistItems[stepId] = item;
+    //
+    //         var text = item.GetComponentInChildren<TextMeshProUGUI>();
+    //         if (text != null)
+    //         {
+    //             text.text = $"{stepId + 1}: {description}";
+    //             text.color = completed ? Color.green : Color.white;
+    //         }
+    //     }
+    // }
+    
     private void UpdateObjects(Dictionary<int, (string label, int required, int found)> summary)
     {
-        Debug.Log("UpdateObjects called");
-        clearObjects();
+        // Build one string with line breaks
+        var sb = new System.Text.StringBuilder();
         foreach (var kvp in summary)
         {
-            int yoloId = kvp.Key;
             var (label, required, found) = kvp.Value;
+            // Show a checkmark if “found” meets “required”
+            string checkbox = (found >= required) ? "✔ " : "◻ ";
+            // Optionally color the text based on completion
+            string color = (found >= required) ? "#00FF00" : "#FFFFFF";
 
-            if (!objectChecklistItems.TryGetValue(yoloId, out GameObject item))
-            {
-                item = Instantiate(checklistItemPrefab, objectChecklistContainer);
-                objectChecklistItems[yoloId] = item;
-            }
-
-            var text = item.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
-            {
-                text.text = $"{label}: {found}/{required}";
-                text.color = found >= required ? Color.green : Color.white;
-            }
+            sb.Append($"<color={color}>{checkbox}{label}: {found}/{required}</color>\n\n");
         }
-    }
 
+        // Assign to your single TextMeshProUGUI
+        objectList.text = sb.ToString();
+    }
+    
     private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
     {
-        clearSteps();
-        foreach (var (stepId, description, completed) in steps)
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < steps.Count; i++)
         {
-            GameObject item = Instantiate(checklistItemPrefab, stepChecklistContainer);
-            stepChecklistItems[stepId] = item;
-
-            var text = item.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
-            {
-                text.text = $"{stepId + 1}: {description}";
-                text.color = completed ? Color.green : Color.white;
-            }
+            var (stepId, description, completed) = steps[i];
+            string checkbox = completed ? "✔ " : "◻ ";
+            // Optionally color the checkbox or the whole line:
+            string color = completed ? "#00FF00" : "#FFFFFF";
+            sb.Append($"<color={color}>{checkbox}{i + 1}: {description.Trim()}</color>\n\n");
         }
+        stepList.text = sb.ToString();
     }
 
     private void clearObjects()
     {
-        objectChecklistItems.Clear();
-        foreach (Transform child in objectChecklistContainer)
+        if (objectList != null)
         {
-            Destroy(child.gameObject);
+            objectList.text = string.Empty;
         }
     }
 
     private void clearSteps()
     {
-        stepChecklistItems.Clear();
-        foreach (Transform child in stepChecklistContainer)
+        // Clear the single text block showing steps
+        if (stepList != null)
         {
-            Destroy(child.gameObject);
+            stepList.text = string.Empty;
         }
     }
 
