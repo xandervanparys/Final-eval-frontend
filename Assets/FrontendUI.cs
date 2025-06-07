@@ -16,6 +16,7 @@ public class FrontendUI : MonoBehaviour
     public GameObject loadingSpinner;
     public TextMeshProUGUI stepList;
     public TextMeshProUGUI objectList;
+    public TextMeshProUGUI currentStepText;
     private readonly Dictionary<int, GameObject> objectChecklistItems = new();
     private readonly Dictionary<int, GameObject> stepChecklistItems = new();
 
@@ -117,10 +118,13 @@ public class FrontendUI : MonoBehaviour
         feedbackText.gameObject.SetActive(tracking);
         locateButton.gameObject.SetActive(tracking);
         objectList.gameObject.SetActive(!isIdle);
+        stepList.gameObject.SetActive(taskSummary);
+        currentStepText.gameObject.SetActive(tracking);
 
         if (taskSummary)
         {
-            objectList.rectTransform.anchoredPosition = new Vector3(objectList.rectTransform.anchoredPosition.x - 127, stepList.rectTransform.anchoredPosition.y, 0);
+            objectList.rectTransform.anchoredPosition = new Vector3(objectList.rectTransform.anchoredPosition.x - 127,
+                stepList.rectTransform.anchoredPosition.y, 0);
 
             UpdateObjects(manager.GetAllObjectsForCurrentTask());
             UpdateStepList(manager.GetAllStepsForCurrentTask());
@@ -134,10 +138,7 @@ public class FrontendUI : MonoBehaviour
     private void UpdateObjects(Dictionary<int, (string label, int required, int found)> summary)
     {
         var sb = new System.Text.StringBuilder();
-        if (manager.CurrentState == TaskState.TaskSummary)
-        {
-            sb.Append("<b>Relevant Objects:</b>\n\n");
-        }
+        sb.Append("<b>Relevant Objects:</b>\n\n");
         foreach (var kvp in summary)
         {
             var (label, required, found) = kvp.Value;
@@ -155,15 +156,25 @@ public class FrontendUI : MonoBehaviour
         if (manager.CurrentState == TaskState.TaskSummary)
         {
             sb.Append("<b>Task Instructions:</b>\n\n");
-        }
-        for (int i = 0; i < steps.Count; i++)
-        {
-            var (stepId, description, completed) = steps[i];
-            string color = completed ? "#00FF00" : "#FFFFFF";
-            sb.Append($"<color={color}>{i + 1}: {description.Trim()}</color>\n\n");
-        }
+            for (int i = 0; i < steps.Count; i++)
+            {
+                var (stepId, description, completed) = steps[i];
+                sb.Append($"{i + 1}: {description.Trim()}\n\n");
+            }
 
-        stepList.text = sb.ToString();
+            stepList.text = sb.ToString();
+        }
+        else
+        {
+            sb.Append("<b>Current Step:</b>\n\n");
+            var current = steps.Find(s => !s.completed);
+            if (current.description != null)
+            {
+                sb.Append($"{current.stepId + 1}: {current.description}");
+            }
+
+            currentStepText.text = sb.ToString();
+        }
     }
 
     private void clearObjects()
