@@ -26,6 +26,7 @@ public class FrontendUI : MonoBehaviour
     {
         loadingSpinner.SetActive(true);
 
+
         manager = RecognX.ARInstructionManager.Instance;
 
         manager.OnTasksLoaded += tasks =>
@@ -115,17 +116,28 @@ public class FrontendUI : MonoBehaviour
         captureButton.gameObject.SetActive(tracking);
         feedbackText.gameObject.SetActive(tracking);
         locateButton.gameObject.SetActive(tracking);
+        objectList.gameObject.SetActive(!isIdle);
 
         if (taskSummary)
         {
+            objectList.rectTransform.anchoredPosition = new Vector3(objectList.rectTransform.anchoredPosition.x - 127, stepList.rectTransform.anchoredPosition.y, 0);
+
             UpdateObjects(manager.GetAllObjectsForCurrentTask());
             UpdateStepList(manager.GetAllStepsForCurrentTask());
+        }
+        else
+        {
+            objectList.rectTransform.anchoredPosition = new Vector2(515, -75);
         }
     }
 
     private void UpdateObjects(Dictionary<int, (string label, int required, int found)> summary)
     {
         var sb = new System.Text.StringBuilder();
+        if (manager.CurrentState == TaskState.TaskSummary)
+        {
+            sb.Append("<b>Relevant Objects:</b>\n\n");
+        }
         foreach (var kvp in summary)
         {
             var (label, required, found) = kvp.Value;
@@ -140,6 +152,10 @@ public class FrontendUI : MonoBehaviour
     private void UpdateStepList(List<(int stepId, string description, bool completed)> steps)
     {
         var sb = new System.Text.StringBuilder();
+        if (manager.CurrentState == TaskState.TaskSummary)
+        {
+            sb.Append("<b>Task Instructions:</b>\n\n");
+        }
         for (int i = 0; i < steps.Count; i++)
         {
             var (stepId, description, completed) = steps[i];
