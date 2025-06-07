@@ -17,6 +17,11 @@ public class FrontendUI : MonoBehaviour
     public TextMeshProUGUI stepList;
     public TextMeshProUGUI objectList;
     public TextMeshProUGUI currentStepText;
+
+    [Header("Auto-Scan Controls")]
+    public Toggle autoScanToggle;
+    public Slider autoScanIntervalSlider;
+
     private readonly Dictionary<int, GameObject> objectChecklistItems = new();
     private readonly Dictionary<int, GameObject> stepChecklistItems = new();
 
@@ -26,8 +31,6 @@ public class FrontendUI : MonoBehaviour
     private void Start()
     {
         loadingSpinner.SetActive(true);
-
-
         manager = RecognX.ARInstructionManager.Instance;
 
         manager.OnTasksLoaded += tasks =>
@@ -90,6 +93,27 @@ public class FrontendUI : MonoBehaviour
             }, TaskScheduler.FromCurrentSynchronizationContext());
         });
 
+        if (autoScanToggle != null)
+        {
+            autoScanToggle.isOn = manager.AutoScanEnabled;
+            autoScanToggle.onValueChanged.AddListener(isOn =>
+            {
+                manager.AutoScanEnabled = isOn;
+            });
+        }
+
+        // Auto-Scan interval slider initialization
+        if (autoScanIntervalSlider != null)
+        {
+            // Set slider to current interval
+            autoScanIntervalSlider.value = manager.AutoScanInterval;
+            // Update manager when slider moves
+            autoScanIntervalSlider.onValueChanged.AddListener(val =>
+            {
+                manager.AutoScanInterval = val;
+            });
+        }
+
         UpdateUIForState(RecognX.TaskState.Idle);
     }
 
@@ -120,7 +144,9 @@ public class FrontendUI : MonoBehaviour
         objectList.gameObject.SetActive(!isIdle);
         stepList.gameObject.SetActive(taskSummary);
         currentStepText.gameObject.SetActive(tracking);
-
+        autoScanToggle.gameObject.SetActive(taskSummary);
+        autoScanIntervalSlider.gameObject.SetActive(taskSummary);
+        
         if (taskSummary)
         {
             objectList.rectTransform.anchoredPosition = new Vector3(objectList.rectTransform.anchoredPosition.x - 127,
